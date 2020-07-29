@@ -40,7 +40,7 @@ def zones_equal(zone1, zone2):
         if z1_corners == z2_corners:
             z1_corners = [zone1.GetCornerPosition(index) for index in range(z1_corners)]
             z2_corners = [zone2.GetCornerPosition(index) for index in range(z2_corners)]
-            z1z2_corners = zip(z1_corners, z2_corners)
+            z1z2_corners = list(zip(z1_corners, z2_corners))
             if all(x[0] == x[1] for x in z1z2_corners):
                 return 1
     return 0
@@ -64,7 +64,7 @@ def remove_duplicate_zones(board):
 
         for index in range(len(zones)):
             z1 = zones[index]
-            bools = map(lambda x: zones_equal(x, z1), zones[index+1:])
+            bools = [zones_equal(x, z1) for x in zones[index+1:]]
             if sum(bools) != 0:
                 board.RemoveNative(z1)
 
@@ -106,7 +106,7 @@ def remove_duplicate_tracks(board):
 
         for index in range(len(tracks)):
             t1 = tracks[index] 
-            bools = map(lambda x: tracks_equal(x, t1), tracks[index+1:])
+            bools = [tracks_equal(x, t1) for x in tracks[index+1:]]
             if sum(bools) != 0:
                 board.RemoveNative(t1)
 
@@ -146,7 +146,7 @@ def text_equal(text1, text2):
     t2_properties.append(text2.GetTextWidth())
     t2_properties.append(text2.GetTextHeight())
 
-    t1t2_properties = zip(t1_properties, t2_properties)
+    t1t2_properties = list(zip(t1_properties, t2_properties))
     if all(x[0] == x[1] for x in t1t2_properties):
         return 1
     return 0
@@ -163,7 +163,7 @@ def remove_duplicate_text(board):
 
     for index in range(len(text_items)):
         t1 = text_items[index]
-        bools = map(lambda x: text_equal(x, t1), text_items[index+1:])
+        bools = [text_equal(x, t1) for x in text_items[index+1:]]
         if sum(bools) != 0:
             board.RemoveNative(t1)
 
@@ -193,7 +193,7 @@ def drawings_equal(drawing1, drawing2):
     d2_properties.append(drawing2.GetType())
     d2_properties.append(drawing2.GetShape())
 
-    d1d2_properties = zip(d1_properties, d2_properties)
+    d1d2_properties = list(zip(d1_properties, d2_properties))
     if all(x[0] == x[1] for x in d1d2_properties):
         return 1
     return 0
@@ -210,7 +210,7 @@ def remove_duplicate_drawings(board):
 
     for index in range(len(drawing_items)):
         d1 = drawing_items[index]
-        bools = map(lambda x: drawings_equal(x, d1), drawing_items[index+1:])
+        bools = [drawings_equal(x, d1) for x in drawing_items[index+1:]]
         if sum(bools) != 0:
             board.RemoveNative(d1)
 

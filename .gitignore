@@ -3,3 +3,5 @@
 *.log
 *.bak
 *.kicad_pcb-bak
+.idea
+.vscode

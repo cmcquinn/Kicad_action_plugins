@@ -17,13 +17,13 @@ import wx.xrc
 class ReplicateLayoutGUI ( wx.Dialog ):
 
 	def __init__( self, parent ):
-		wx.Dialog.__init__ ( self, parent, id = wx.ID_ANY, title = u"Replicate layout", pos = wx.DefaultPosition, size = wx.Size( 313,492 ), style = wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER )
+		wx.Dialog.__init__ ( self, parent, id = wx.ID_ANY, title = "Replicate layout", pos = wx.DefaultPosition, size = wx.Size( 313,492 ), style = wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER )
 
 		self.SetSizeHints( wx.Size( 313,409 ), wx.DefaultSize )
 
 		bSizer14 = wx.BoxSizer( wx.VERTICAL )
 
-		self.m_staticText5 = wx.StaticText( self, wx.ID_ANY, u"Source hierarchy level:", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.m_staticText5 = wx.StaticText( self, wx.ID_ANY, "Source hierarchy level:", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.m_staticText5.Wrap( -1 )
 
 		bSizer14.Add( self.m_staticText5, 0, wx.ALL, 5 )
@@ -37,7 +37,7 @@ class ReplicateLayoutGUI ( wx.Dialog ):
 
 		bSizer14.Add( bSizer18, 1, wx.EXPAND, 5 )
 
-		self.m_staticText6 = wx.StaticText( self, wx.ID_ANY, u"Destination sheets:", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.m_staticText6 = wx.StaticText( self, wx.ID_ANY, "Destination sheets:", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.m_staticText6.Wrap( -1 )
 
 		bSizer14.Add( self.m_staticText6, 0, wx.ALL, 5 )
@@ -51,40 +51,40 @@ class ReplicateLayoutGUI ( wx.Dialog ):
 
 		bSizer14.Add( bSizer16, 2, wx.EXPAND, 5 )
 
-		self.chkbox_locked = wx.CheckBox( self, wx.ID_ANY, u"Replicate locked footprints", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.chkbox_locked = wx.CheckBox( self, wx.ID_ANY, "Replicate locked footprints", wx.DefaultPosition, wx.DefaultSize, 0 )
 		bSizer14.Add( self.chkbox_locked, 0, wx.ALL, 5 )
 
-		self.chkbox_tracks = wx.CheckBox( self, wx.ID_ANY, u"Replicate tracks", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.chkbox_tracks = wx.CheckBox( self, wx.ID_ANY, "Replicate tracks", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.chkbox_tracks.SetValue(True)
 		bSizer14.Add( self.chkbox_tracks, 0, wx.ALL, 5 )
 
-		self.chkbox_zones = wx.CheckBox( self, wx.ID_ANY, u"Replicate zones", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.chkbox_zones = wx.CheckBox( self, wx.ID_ANY, "Replicate zones", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.chkbox_zones.SetValue(True)
 		bSizer14.Add( self.chkbox_zones, 0, wx.ALL, 5 )
 
-		self.chkbox_text = wx.CheckBox( self, wx.ID_ANY, u"Replicate text", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.chkbox_text = wx.CheckBox( self, wx.ID_ANY, "Replicate text", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.chkbox_text.SetValue(True)
 		bSizer14.Add( self.chkbox_text, 0, wx.ALL, 5 )
 
-		self.chkbox_drawings = wx.CheckBox( self, wx.ID_ANY, u"Replicate drawings", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.chkbox_drawings = wx.CheckBox( self, wx.ID_ANY, "Replicate drawings", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.chkbox_drawings.SetValue(True)
 		bSizer14.Add( self.chkbox_drawings, 0, wx.ALL, 5 )
 
-		self.chkbox_intersecting = wx.CheckBox( self, wx.ID_ANY, u"Replicate intersecting tracks/zones/drawings", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.chkbox_intersecting = wx.CheckBox( self, wx.ID_ANY, "Replicate intersecting tracks/zones/drawings", wx.DefaultPosition, wx.DefaultSize, 0 )
 		bSizer14.Add( self.chkbox_intersecting, 0, wx.ALL, 5 )
 
-		self.chkbox_remove = wx.CheckBox( self, wx.ID_ANY, u"Remove existing tracks/zones/drawings", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.chkbox_remove = wx.CheckBox( self, wx.ID_ANY, "Remove existing tracks/zones/drawings", wx.DefaultPosition, wx.DefaultSize, 0 )
 		bSizer14.Add( self.chkbox_remove, 0, wx.ALL, 5 )
 
-		self.chkbox_remove_duplicates = wx.CheckBox( self, wx.ID_ANY, u"Remove duplicates (might take some time)", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.chkbox_remove_duplicates = wx.CheckBox( self, wx.ID_ANY, "Remove duplicates (might take some time)", wx.DefaultPosition, wx.DefaultSize, 0 )
 		bSizer14.Add( self.chkbox_remove_duplicates, 0, wx.ALL, 5 )
 
 		bSizer15 = wx.BoxSizer( wx.HORIZONTAL )
 
-		self.btn_ok = wx.Button( self, wx.ID_OK, u"Ok", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.btn_ok = wx.Button( self, wx.ID_OK, "Ok", wx.DefaultPosition, wx.DefaultSize, 0 )
 		bSizer15.Add( self.btn_ok, 0, wx.ALL, 5 )
 
-		self.btn_cancel = wx.Button( self, wx.ID_CANCEL, u"Cancel", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.btn_cancel = wx.Button( self, wx.ID_CANCEL, "Cancel", wx.DefaultPosition, wx.DefaultSize, 0 )
 		bSizer15.Add( self.btn_cancel, 0, wx.ALL, 5 )
 
 

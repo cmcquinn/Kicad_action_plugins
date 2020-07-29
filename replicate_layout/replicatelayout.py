@@ -43,7 +43,7 @@ def get_path(module):
     path = module.GetPath()
     if hasattr(path, 'AsString'):
         path_raw = path.AsString()
-        path = "/".join(map(lambda x: x[-8:].upper(), path_raw.split('/')))
+        path = "/".join([x[-8:].upper() for x in path_raw.split('/')])
     return path
 
 
@@ -75,10 +75,10 @@ else:
 
 def rotate_around_center(coordinates, angle):
     """ rotate coordinates for a defined angle in degrees around coordinate center"""
-    new_x = coordinates[0] * math.cos(2 * math.pi * angle/360)\
-          - coordinates[1] * math.sin(2 * math.pi * angle/360)
-    new_y = coordinates[0] * math.sin(2 * math.pi * angle/360)\
-          + coordinates[1] * math.cos(2 * math.pi * angle/360)
+    new_x = coordinates[0] * math.cos(2 * math.pi * angle / 360) \
+            - coordinates[1] * math.sin(2 * math.pi * angle / 360)
+    new_y = coordinates[0] * math.sin(2 * math.pi * angle / 360) \
+            + coordinates[1] * math.cos(2 * math.pi * angle / 360)
     return new_x, new_y
 
 
@@ -119,53 +119,58 @@ class Replicator():
             file_lines = f.read().decode('utf-8')
         # alternative solution
         # extract all sheet references
-        sheet_indices = [m.start() for m in re.finditer('\$Sheet', file_lines)]
-        endsheet_indices = [m.start() for m in re.finditer('\$EndSheet', file_lines)]
+        sheet_indices = []
+        endsheet_indices = []
+        start = file_lines.find('(sheet')
+        while start != -1:
+            sheet_indices.append(start)
+            start = file_lines.find('(sheet', start)
+
+        # match closing parenthesis of '(sheet' groups
+        for index in sheet_indices:
+            stack = [file_lines[index]]
+            end = len(file_lines)
+
+            for i in range(index, end):
+                char = file_lines[i]
+                if char == '(':
+                    stack.append('(')
+                elif char == ')':
+                    stack.pop()
+                    if len(stack) == 0:
+                        endsheet_indices.append(i)
+                        break
 
         if len(sheet_indices) != len(endsheet_indices):
             raise LookupError("Schematic page contains errors")
 
-        sheet_locations = zip(sheet_indices, endsheet_indices)
+        sheet_locations = list(zip(sheet_indices, endsheet_indices))
         for sheet_location in sheet_locations:
-            sheet_reference = file_lines[sheet_location[0]:sheet_location[1]].split('\n')
-            # parse the sheed description
-            for line in sheet_reference:
-                # found sheet ID
-                if line.startswith('U '):
-                    subsheet_id = line.split()[1]
-                # found sheet name
-                if line.startswith('F0 '):
-                    # remove the first field ("F0 ")
-                    partial_line = line.lstrip("F0 ")
-                    partial_line = " ".join(partial_line.split()[:-1])
-                    # remove the last field (text size)
-                    subsheet_name = partial_line.rstrip("\"").lstrip("\"")
-                # found sheet filename
-                if line.startswith('F1 '):
-                    subsheet_path = re.findall("\s\"(.*.sch)\"\s", line)[0]
-                    subsheet_line = file_lines.split("\n").index(line)
-                    if not os.path.isabs(subsheet_path):
-                        # check if path is encoded with variables
-                        if "${" in subsheet_path:
-                            start_index = subsheet_path.find("${") + 2
-                            end_index = subsheet_path.find("}")
-                            env_var = subsheet_path[start_index:end_index]
-                            path = os.getenv(env_var)
-                            # if variable is not defined rasie an exception
-                            if path is None:
-                                raise LookupError("Can not find subsheet: " + subsheet_path)
-                            # replace variable with full path
-                            subsheet_path = subsheet_path.replace("${", "") \
-                                .replace("}", "") \
-                                .replace("env_var", path)
+            sheet_reference = file_lines[sheet_location[0]:sheet_location[1]]
+            subsheet_id = re.search('\\(id ([0-9]{1,})\\)', sheet_reference).groups()
+            subsheet_name = re.search('\"Sheet name\"\\s*\"(.*?)\"\\s*\\(id', sheet_reference).groups()
+            subsheet_path = re.search('\"Sheet file\"\\s*\"(.*?\\.kicad_sch)\"\\s*\\(id', sheet_reference)
 
-                    # if path is still not absolute, then it is relative to project
-                    if not os.path.isabs(subsheet_path):
-                        subsheet_path = os.path.join(file_folder, subsheet_path)
+            if not os.path.isabs(subsheet_path):
+                # check if path is encoded with variables
+                if "${" in subsheet_path:
+                    start_index = subsheet_path.find("${") + 2
+                    end_index = subsheet_path.find("}")
+                    env_var = subsheet_path[start_index:end_index]
+                    path = os.getenv(env_var)
+                    # if variable is not defined rasie an exception
+                    if path is None:
+                        raise LookupError("Can not find subsheet: " + subsheet_path)
+                    # replace variable with full path
+                    subsheet_path = subsheet_path.replace("${", "") \
+                        .replace("}", "") \
+                        .replace("env_var", path)
 
-                    subsheet_path = os.path.normpath(subsheet_path)
-                    # found subsheet reference go for the next one, no need to parse further
-                    break
+            # if path is still not absolute, then it is relative to project
+            if not os.path.isabs(subsheet_path):
+                subsheet_path = os.path.join(file_folder, subsheet_path)
+
+            subsheet_path = os.path.normpath(subsheet_path)
 
             file_path = os.path.abspath(subsheet_path)
             yield file_path, subsheet_id, subsheet_name
@@ -203,8 +208,9 @@ class Replicator():
         self.stage = 1
         self.update_progress = None
 
+        logger.info("Schematic file " + self.sch_filename)
         self.pcb_filename = os.path.abspath(board.GetFileName())
-        self.sch_filename = self.pcb_filename.replace(".kicad_pcb", ".sch")
+        self.sch_filename = self.pcb_filename.replace(".kicad_pcb", ".kicad_sch")
         self.project_folder = os.path.dirname(self.pcb_filename)
 
         # test if sch file exist
@@ -217,19 +223,19 @@ class Replicator():
         logger.info("Project hierarchy looks like:\n%s" % repr(self.dict_of_sheets))
 
         # make all paths relative
-        for x in self.dict_of_sheets.keys():
+        for x in list(self.dict_of_sheets.keys()):
             path = self.dict_of_sheets[x][1]
             self.dict_of_sheets[x] = [self.dict_of_sheets[x][0], os.path.relpath(path, self.project_folder)]
 
         # construct a list of modules with all pertinent data 
-        logger.info('getting a list of all footprints on board') 
+        logger.info('getting a list of all footprints on board')
         bmod = board.GetModules()
         self.modules = []
         for module in bmod:
             mod_named_tuple = Module(mod=module,
                                      mod_id=self.get_module_id(module),
                                      sheet_id=self.get_sheet_id(module)[0],
-                                     filename=self.get_sheet_id(module)[1], 
+                                     filename=self.get_sheet_id(module)[1],
                                      ref=module.GetReference())
             self.modules.append(mod_named_tuple)
         pass
@@ -246,7 +252,8 @@ class Replicator():
         sheet_file = mod.filename
         # find level path id
         level_file = sheet_file[sheet_id.index(level)]
-        logger.info('construcing a list of sheets suitable for replication on level:'+repr(level)+", file:"+repr(level_file))
+        logger.info('construcing a list of sheets suitable for replication on level:' + repr(level) + ", file:" + repr(
+            level_file))
 
         src_sheet_path = []
         for i in range(len(sheet_id)):
@@ -366,8 +373,8 @@ class Replicator():
         for track in all_tracks:
             track_bb = track.GetBoundingBox()
             # if track is contained or intersecting the bounding box
-            if (containing and bounding_box.Contains(track_bb)) or\
-               (not containing and bounding_box.Intersects(track_bb)):
+            if (containing and bounding_box.Contains(track_bb)) or \
+                    (not containing and bounding_box.Intersects(track_bb)):
                 tracks.append(track)
             # even if track is not within the bounding box
             else:
@@ -386,8 +393,8 @@ class Replicator():
         zones = []
         for zone in all_zones:
             zone_bb = zone.GetBoundingBox()
-            if (containing and bounding_box.Contains(zone_bb)) or\
-               (not containing and bounding_box.Intersects(zone_bb)):
+            if (containing and bounding_box.Contains(zone_bb)) or \
+                    (not containing and bounding_box.Intersects(zone_bb)):
                 zones.append(zone)
         return zones
 
@@ -482,10 +489,10 @@ class Replicator():
             if matches > 1:
                 match_len = []
                 for index in range(0, matches):
-                    match_len.append(len(set(mod[2]) & set(mod[2+3*(index+1)])))
+                    match_len.append(len(set(mod[2]) & set(mod[2 + 3 * (index + 1)])))
                 index = match_len.index(max(match_len))
-                mod_pairs.append((mod[0], mod[3*(index+1)]))
-                mod_pairs_by_reference.append((mod[0].GetReference(), mod[3*(index+1)].GetReference()))
+                mod_pairs.append((mod[0], mod[3 * (index + 1)]))
+                mod_pairs_by_reference.append((mod[0].GetReference(), mod[3 * (index + 1)].GetReference()))
             # if only one match
             elif matches == 1:
                 mod_pairs.append((mod[0], mod[3]))
@@ -554,44 +561,44 @@ class Replicator():
     def prepare_for_replication(self, level, containing):
         # get a list of source modules for replication
         logger.info("Getting the list of source footprints")
-        self.update_progress(self.stage, 0/8, None)
+        self.update_progress(self.stage, 0 / 8, None)
         self.src_modules = self.get_modules_on_sheet(level)
         # get the rest of the modules
         logger.info("Getting the list of all the remaining footprints")
-        self.update_progress(self.stage, 1/8, None)
+        self.update_progress(self.stage, 1 / 8, None)
         self.other_modules = self.get_modules_not_on_sheet(level)
         # get nets local to source modules
         logger.info("Getting nets local to source footprints")
-        self.update_progress(self.stage, 2/8, None)
+        self.update_progress(self.stage, 2 / 8, None)
         self.src_local_nets = self.get_local_nets(self.src_modules, self.other_modules)
         # get source bounding box
         logger.info("Getting source bounding box")
-        self.update_progress(self.stage, 3/8, None)
+        self.update_progress(self.stage, 3 / 8, None)
         self.src_bounding_box = self.get_modules_bounding_box(self.src_modules)
         # get source tracks
         logger.info("Getting source tracks")
-        self.update_progress(self.stage, 4/8, None)
+        self.update_progress(self.stage, 4 / 8, None)
         self.src_tracks = self.get_tracks(self.src_bounding_box, self.src_local_nets, containing)
         # get source zones
         logger.info("Getting source zones")
-        self.update_progress(self.stage, 5/8, None)
+        self.update_progress(self.stage, 5 / 8, None)
         self.src_zones = self.get_zones(self.src_bounding_box, containing)
         # get source text items
         logger.info("Getting source text items")
-        self.update_progress(self.stage, 6/8, None)
+        self.update_progress(self.stage, 6 / 8, None)
         self.src_text = self.get_text_items(self.src_bounding_box, containing)
         # get source drawings
         logger.info("Getting source text items")
-        self.update_progress(self.stage, 7/8, None)
+        self.update_progress(self.stage, 7 / 8, None)
         self.src_drawings = self.get_drawings(self.src_bounding_box, containing)
-        self.update_progress(self.stage, 8/8, None)
+        self.update_progress(self.stage, 8 / 8, None)
 
     def replicate_modules(self):
         logger.info("Replicating footprints")
         nr_sheets = len(self.dst_sheets)
         for st_index in range(nr_sheets):
             sheet = self.dst_sheets[st_index]
-            progress = st_index/nr_sheets
+            progress = st_index / nr_sheets
             self.update_progress(self.stage, progress, None)
             logger.info("Replicating footprints on sheet " + repr(sheet))
             # get anchor module
@@ -610,7 +617,7 @@ class Replicator():
             for mod_index in range(nr_mods):
                 dst_mod = dst_modules[mod_index]
 
-                progress = progress + (1/nr_sheets)*(1/nr_mods)
+                progress = progress + (1 / nr_sheets) * (1 / nr_mods)
                 self.update_progress(self.stage, progress, None)
 
                 # skip locked footprints
@@ -679,8 +686,10 @@ class Replicator():
                 dst_mod_text_items = get_module_text_items(dst_mod)
                 # check if both modules (source and the one for replication) have the same number of text items
                 if len(src_mod_text_items) != len(dst_mod_text_items):
-                    raise LookupError("Source module: " + src_mod.ref + " has different number of text items (" + repr(len(src_mod_text_items))
-                                      + ")\nthan module for replication: " + dst_mod.ref + " (" + repr(len(dst_mod_text_items)) + ")")
+                    raise LookupError("Source module: " + src_mod.ref + " has different number of text items (" + repr(
+                        len(src_mod_text_items))
+                                      + ")\nthan module for replication: " + dst_mod.ref + " (" + repr(
+                        len(dst_mod_text_items)) + ")")
                 # replicate each text item
                 for src_text in src_mod_text_items:
                     index = src_mod_text_items.index(src_text)
@@ -717,7 +726,7 @@ class Replicator():
         nr_sheets = len(self.dst_sheets)
         for st_index in range(nr_sheets):
             sheet = self.dst_sheets[st_index]
-            progress = st_index/nr_sheets
+            progress = st_index / nr_sheets
             self.update_progress(self.stage, progress, None)
             logger.info("Replicating tracks on sheet " + repr(sheet))
 
@@ -740,7 +749,7 @@ class Replicator():
             nr_tracks = len(self.src_tracks)
             for track_index in range(nr_tracks):
                 track = self.src_tracks[track_index]
-                progress = progress + (1/nr_sheets)*(1/nr_tracks)
+                progress = progress + (1 / nr_sheets) * (1 / nr_tracks)
                 self.update_progress(self.stage, progress, None)
                 # get from which net we are cloning
                 from_net_name = track.GetNetname()
@@ -769,7 +778,7 @@ class Replicator():
         nr_sheets = len(self.dst_sheets)
         for st_index in range(nr_sheets):
             sheet = self.dst_sheets[st_index]
-            progress = st_index/nr_sheets
+            progress = st_index / nr_sheets
             self.update_progress(self.stage, progress, None)
             logger.info("Replicating zones on sheet " + repr(sheet))
 
@@ -791,7 +800,7 @@ class Replicator():
             nr_zones = len(self.src_zones)
             for zone_index in range(nr_zones):
                 zone = self.src_zones[zone_index]
-                progress = progress + (1/nr_sheets)*(1/nr_zones)
+                progress = progress + (1 / nr_sheets) * (1 / nr_zones)
                 self.update_progress(self.stage, progress, None)
 
                 # get from which net we are cloning
@@ -814,7 +823,7 @@ class Replicator():
 
                 # start the clone
                 to_net_name = tup[0][1]
-                if to_net_name == u'':
+                if to_net_name == '':
                     to_net_code = 0
                     to_net_item = self.board.FindNet(0)
                 else:
@@ -835,7 +844,7 @@ class Replicator():
         nr_sheets = len(self.dst_sheets)
         for st_index in range(nr_sheets):
             sheet = self.dst_sheets[st_index]
-            progress = st_index/nr_sheets
+            progress = st_index / nr_sheets
             self.update_progress(self.stage, progress, None)
             logger.info("Replicating text on sheet " + repr(sheet))
 
@@ -852,7 +861,7 @@ class Replicator():
             nr_text = len(self.src_text)
             for text_index in range(nr_text):
                 text = self.src_text[text_index]
-                progress = progress + (1/nr_sheets)*(1/nr_text)
+                progress = progress + (1 / nr_sheets) * (1 / nr_text)
                 self.update_progress(self.stage, progress, None)
 
                 new_text = text.Duplicate()
@@ -865,7 +874,7 @@ class Replicator():
         nr_sheets = len(self.dst_sheets)
         for st_index in range(nr_sheets):
             sheet = self.dst_sheets[st_index]
-            progress = st_index/nr_sheets
+            progress = st_index / nr_sheets
             self.update_progress(self.stage, progress, None)
             logger.info("Replicating drawings on sheet " + repr(sheet))
 
@@ -883,7 +892,7 @@ class Replicator():
             nr_drawings = len(self.src_drawings)
             for dw_index in range(nr_drawings):
                 drawing = self.src_drawings[dw_index]
-                progress = progress + (1/nr_sheets)*(1/nr_drawings)
+                progress = progress + (1 / nr_sheets) * (1 / nr_drawings)
                 self.update_progress(self.stage, progress, None)
 
                 new_drawing = drawing.Duplicate()
@@ -984,10 +993,10 @@ class Replicator():
 
     def replicate_layout(self, src_anchor_module, level, dst_sheets,
                          containing, remove, tracks, zones, text, drawings, rm_duplicates, rep_locked):
-        logger.info( "Starting replication of sheets: " + repr(dst_sheets)
-                     +"\non level: " + repr(level)
-                     +"\nwith tracks=" + repr(tracks) +", zone=" + repr(zones) +", text=" + repr(text)
-                     +", containing=" + repr(containing) +", remove=" + repr(remove) +", locked=" + repr(rep_locked))
+        logger.info("Starting replication of sheets: " + repr(dst_sheets)
+                    + "\non level: " + repr(level)
+                    + "\nwith tracks=" + repr(tracks) + ", zone=" + repr(zones) + ", text=" + repr(text)
+                    + ", containing=" + repr(containing) + ", remove=" + repr(remove) + ", locked=" + repr(rep_locked))
 
         self.level = level
         self.src_anchor_module = src_anchor_module
@@ -1092,11 +1101,11 @@ def test_file(in_filename, out_filename, src_anchor_module_reference, level, she
     if all(src_anchor_module.mod.IsFlipped() == dst_mod.mod.IsFlipped() for dst_mod in anchor_fp):
         a = 2
     else:
-        assert(2==3), "Destination anchor footprints are not on the same layer as source anchor footprint"
+        assert (2 == 3), "Destination anchor footprints are not on the same layer as source anchor footprint"
 
     # now we are ready for replication
     replicator.update_progress = update_progress
-    replicator.replicate_layout(src_anchor_module, src_anchor_module.sheet_id[0:index+1], dst_sheets,
+    replicator.replicate_layout(src_anchor_module, src_anchor_module.sheet_id[0:index + 1], dst_sheets,
                                 containing=containing, remove=remove, rm_duplicates=True,
                                 tracks=True, zones=True, text=True, drawings=True, rep_locked=True)
 
@@ -1108,26 +1117,26 @@ def test_file(in_filename, out_filename, src_anchor_module_reference, level, she
 
 def main():
     os.chdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "multiple_hierarchy"))
-    
+
     logger.info("Testing multiple hierarchy - inner levels")
     input_file = 'multiple_hierarchy.kicad_pcb'
-    output_file = input_file.split('.')[0]+"_temp"+".kicad_pcb"
+    output_file = input_file.split('.')[0] + "_temp" + ".kicad_pcb"
     err = test_file(input_file, output_file, 'Q301', level=1, sheets=(0, 2, 5,), containing=False, remove=True)
     assert (err == 0), "multiple_hierarchy - inner levels failed"
-    
+
     logger.info("Testing multiple hierarchy - inner levels source on a different hierarchical level")
     input_file = 'multiple_hierarchy.kicad_pcb'
-    output_file = input_file.split('.')[0]+"_temp_alt"+".kicad_pcb"
+    output_file = input_file.split('.')[0] + "_temp_alt" + ".kicad_pcb"
     err = test_file(input_file, output_file, 'Q1401', level=0, sheets=(0, 2, 5,), containing=False, remove=True)
     assert (err == 0), "multiple_hierarchy - inner levels from bottom failed"
 
     logger.info("Testing multiple hierarchy - outer levels")
     input_file = 'multiple_hierarchy_outer.kicad_pcb'
-    output_file = input_file.split('.')[0]+"_temp"+".kicad_pcb"
+    output_file = input_file.split('.')[0] + "_temp" + ".kicad_pcb"
     err = test_file(input_file, output_file, 'Q301', level=0, sheets=(1,), containing=False, remove=False)
     assert (err == 0), "multiple_hierarchy - outer levels failed"
 
-    print ("all tests passed")
+    print("all tests passed")
 
 
 # for testing purposes only
