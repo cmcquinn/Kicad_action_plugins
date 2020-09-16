@@ -84,8 +84,9 @@ class LenghtStatsDialog(lenght_stats_GUI.LenghtStatsGUI):
         self.refresh_time = 0.1
 
         self.Bind(wx.EVT_TIMER, self.on_update, self.timer)
+        self.Bind(wx.EVT_CLOSE, self.on_close)
 
-        self.logger.info("Lenght stats gui initialized")
+        self.logger.info("Length stats gui initialized")
         self.logger.info("Nets for stats are;\n" + repr(self.nets))
 
     def cont_refresh_toggle(self, event):
@@ -95,6 +96,11 @@ class LenghtStatsDialog(lenght_stats_GUI.LenghtStatsGUI):
         else:
             self.logger.info("Automatic refresh turned off")
             self.timer.Stop()
+        event.Skip()
+
+    def on_close(self, event):
+        self.logger.info('Window closed')
+        self.timer.Stop()
         event.Skip()
 
     def on_btn_refresh(self, event):
@@ -116,7 +122,7 @@ class LenghtStatsDialog(lenght_stats_GUI.LenghtStatsGUI):
         event.Skip()
 
     def on_update(self, event):
-        self.logger.info("Autimatic refresh")
+        self.logger.info("Automatic refresh")
         self.refresh()
         event.Skip()
 
@@ -281,7 +287,7 @@ class LengthStats(pcbnew.ActionPlugin):
         sl_err = StreamToLogger(stderr_logger, logging.ERROR)
         sys.stderr = sl_err
 
-        _pcbnew_frame = [x for x in wx.GetTopLevelWindows() if x.GetTitle().lower().startswith('pcbnew')][0]
+        _pcbnew_frame = [x for x in wx.GetTopLevelWindows() if x.GetTitle().lower().find('pcbnew') != -1][0]
 
         # find all selected tracks and pads
         nets = set()
