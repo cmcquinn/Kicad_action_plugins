@@ -20,12 +20,13 @@
 #
 #
 
-import wx
-import pcbnew
-import os
 import logging
+import os
 import sys
 import timeit
+
+import pcbnew
+import wx
 
 if __name__ == '__main__':
     import lenght_stats_GUI
@@ -57,10 +58,10 @@ class LenghtStatsDialog(lenght_stats_GUI.LenghtStatsGUI):
             # wxPython 4
             super(LenghtStatsDialog, self).SetSizeHints(sz1, sz2)
 
-    def __init__(self,  parent, board, nets, logger):
+    def __init__(self, parent, board, nets, logger):
         lenght_stats_GUI.LenghtStatsGUI.__init__(self, parent)
 
-        self.net_list.InsertColumn(0, 'Net', width=100) 
+        self.net_list.InsertColumn(0, 'Net')
         self.net_list.InsertColumn(1, 'Length')
 
         self.net_data = []
@@ -70,7 +71,10 @@ class LenghtStatsDialog(lenght_stats_GUI.LenghtStatsGUI):
             index_net = nets.index(net)
             index = self.net_list.InsertStringItem(index_net, net)
             self.net_list.SetStringItem(index, 1, "0.0")
-            self.net_data.append( (net, 0.0) )
+            self.net_data.append((net, 0.0))
+
+        # resize net name column to fit contents
+        self.net_list.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
         self.board = board
         self.nets = nets
@@ -139,7 +143,7 @@ class LenghtStatsDialog(lenght_stats_GUI.LenghtStatsGUI):
             # sum their lenght
             length = 0
             for t in tracks_on_net:
-                length = length + t.GetLength()/SCALE
+                length = length + t.GetLength() / SCALE
 
             index_net = self.nets.index(net)
             self.net_data[index_net] = (net, length)
@@ -161,7 +165,7 @@ class LenghtStatsDialog(lenght_stats_GUI.LenghtStatsGUI):
             selected_items = []
             for index in range(self.net_list.GetItemCount()):
                 if self.net_list.IsSelected(index):
-                    selected_items.append( (index, self.nets[index]))
+                    selected_items.append((index, self.nets[index]))
 
             selected_items.sort(key=lambda tup: tup[0], reverse=True)
 
@@ -191,7 +195,7 @@ class LenghtStatsDialog(lenght_stats_GUI.LenghtStatsGUI):
         selected_items = []
         for index in range(self.net_list.GetItemCount()):
             if self.net_list.IsSelected(index):
-                selected_items.append(self.nets[index])        
+                selected_items.append(self.nets[index])
 
         self.logger.info("Adding highlights for nets:\n" + repr(selected_items))
         for track in list_tracks:
@@ -254,8 +258,8 @@ class LengthStats(pcbnew.ActionPlugin):
         self.category = "Get tracks lenght"
         self.description = "Obtains and refreshes lenght of all tracks on selected nets"
         self.icon_file_name = os.path.join(
-                os.path.dirname(__file__), 'ps_diff_pair_tune_length-length_stats.svg.png')
-                
+            os.path.dirname(__file__), 'ps_diff_pair_tune_length-length_stats.svg.png')
+
     def Run(self):
         # load board
         board = pcbnew.GetBoard()
@@ -308,6 +312,7 @@ class StreamToLogger(object):
     """
     Fake file-like stream object that redirects writes to a logger instance.
     """
+
     def __init__(self, logger, log_level=logging.INFO):
         self.logger = logger
         self.log_level = log_level
