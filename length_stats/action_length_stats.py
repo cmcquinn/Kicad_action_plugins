@@ -33,7 +33,11 @@ if __name__ == '__main__':
 else:
     from . import length_stats_GUI
 
-SCALE = 1000000.0
+IU_PER_MM = 1000000.0
+MILS_PER_INCH = 1000.0
+MILS_PER_MM = 39.37
+MM_FORMAT_PRECISION = 2
+INCHES_FORMAT_PRECISION = 4
 
 # get version information
 version_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "version.txt")
@@ -61,8 +65,10 @@ class LengthStatsDialog(length_stats_GUI.LengthStatsGUI):
     def __init__(self, parent, board, nets, logger):
         length_stats_GUI.LengthStatsGUI.__init__(self, parent)
 
+        units = pcbnew.GetUserUnits()
         self.net_list.InsertColumn(0, 'Net')
-        self.net_list.InsertColumn(1, 'Length')
+        # indicate measurement unit in column header
+        self.net_list.InsertColumn(1, 'Length ({})'.format('in' if units == pcbnew.EDA_UNITS_INCHES else 'mm'))
 
         self.net_data = []
 
@@ -134,6 +140,14 @@ class LengthStatsDialog(length_stats_GUI.LengthStatsGUI):
         self.logger.info("Refreshing net lengths")
         start_time = timeit.default_timer()
 
+        # set float precision for strings
+        if pcbnew.GetUserUnits() == pcbnew.EDA_UNITS_INCHES:
+            width = INCHES_FORMAT_PRECISION
+            unit_name = 'in'
+        else:
+            width = MM_FORMAT_PRECISION
+            unit_name = 'mm'
+
         # go through all the nets
         for net in self.nets:
             # get tracks on net
@@ -143,11 +157,17 @@ class LengthStatsDialog(length_stats_GUI.LengthStatsGUI):
             # sum their length
             length = 0
             for t in tracks_on_net:
-                length = length + t.GetLength() / SCALE
+                length = length + t.GetLength() / IU_PER_MM
+
+            if pcbnew.GetUserUnits() == pcbnew.EDA_UNITS_INCHES:
+                length = length * MILS_PER_MM  # convert millimeters to mils
+                length /= MILS_PER_INCH  # convert mils to inches
 
             index_net = self.nets.index(net)
             self.net_data[index_net] = (net, length)
-            self.net_list.SetStringItem(index_net, 1, "%.2f" % length)
+            length_str = '{:.{precision}f}'.format(length, precision=width)
+            self.logger.info('Length of net {}: {:.{precision}f} {}'.format(net, length, unit_name, precision=width))
+            self.net_list.SetStringItem(index_net, 1, length_str)
 
         stop_time = timeit.default_timer()
         delta_time = stop_time - start_time
@@ -155,7 +175,7 @@ class LengthStatsDialog(length_stats_GUI.LengthStatsGUI):
             self.refresh_time = delta_time
         else:
             self.refresh_time = 0.05
-        self.lbl_refresh_time.SetLabelText(u"Refresh time: %.2f s" % delta_time)
+        self.lbl_refresh_time.SetLabelText(u"Refresh time: {:.2f} s".format(delta_time))
 
     def delete_items(self, event):
         self.logger.info("Deleting nets")
