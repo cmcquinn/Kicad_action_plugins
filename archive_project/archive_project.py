@@ -571,7 +571,7 @@ def archive_3D_models(board, allow_missing_models=False, alt_files=False):
         os.makedirs(model_folder_path)
 
     # get all modules
-    modules = board.GetModules()
+    modules = board.GetFootprints()
 
     # go through all modules
     not_copied = []

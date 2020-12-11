@@ -137,7 +137,7 @@ class Pad2PadTrackDistance(pcbnew.ActionPlugin):
             user_units = 'in'
 
         # get all pads
-        modules = board.GetModules()
+        modules = board.GetFootprints()
 
         pads = []
         for mod in modules:

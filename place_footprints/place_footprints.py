@@ -226,7 +226,7 @@ class Placer():
 
         # construct a list of modules with all pertinent data
         logger.info('getting a list of all footprints on board')
-        bmod = board.GetModules()
+        bmod = board.GetFootprints()
         self.modules = []
         mod_dict = {}
         for module in bmod:

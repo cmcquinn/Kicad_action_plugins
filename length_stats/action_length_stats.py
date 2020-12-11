@@ -319,7 +319,7 @@ class LengthStats(pcbnew.ActionPlugin):
 
         nets.update([track.GetNetname() for track in selected_tracks])
 
-        modules = board.GetModules()
+        modules = board.GetFootprints()
         for mod in modules:
             pads = mod.Pads()
             nets.update([pad.GetNetname() for pad in pads if pad.IsSelected()])

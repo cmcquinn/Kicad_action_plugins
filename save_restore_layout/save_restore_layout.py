@@ -232,7 +232,7 @@ class PcbData():
         return None
 
     def get_board_modules(self, board):
-        bmod = board.GetModules()
+        bmod = board.GetFootprints()
         modules = []
         mod_dict = {}
         for module in bmod:

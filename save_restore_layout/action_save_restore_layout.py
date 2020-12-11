@@ -91,7 +91,7 @@ class SaveDialog(save_layout_dialog_GUI.SaveLayoutDialogGUI):
 
         # clear levels
         self.board = board
-        self.board_modules = self.board.GetModules()
+        self.board_modules = self.board.GetFootprints()
         self.pivot_mod = pivot_mod
         self.save_layout = layout_saver
         self.pivot_modules = []

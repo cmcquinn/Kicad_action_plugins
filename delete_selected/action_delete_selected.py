@@ -83,7 +83,7 @@ class DeleteSelected(pcbnew.ActionPlugin):
             all_zones.append(board.GetArea(zoneid))
         selected_zones = [x for x in all_zones if x.IsSelected()]
 
-        all_modules = board.GetModules()
+        all_modules = board.GetFootprints()
         selected_modules = [x for x in all_modules if x.IsSelected()]
 
         # if anything is selected
